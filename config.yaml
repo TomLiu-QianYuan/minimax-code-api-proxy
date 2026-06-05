@@ -1,0 +1,12 @@
+# MiniMax Code API 代理配置
+# 在管理界面中修改，不要手动编辑
+
+target:
+  base_url: ""    # 目标 API Base URL
+  api_key: ""     # 目标 API Key
+  name: "custom"  # 配置名称
+  enabled: false  # 默认关闭（使用原版 MiniMax API）
+
+minimax:
+  install_dir: "C:/Users/33105/AppData/Local/Programs/MiniMax Code"
+  daemon_js: "resources/resources/daemon/daemon.js"
