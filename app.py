@@ -24,6 +24,7 @@ from qfluentwidgets import (
 
 from patcher import DaemonPatcher
 import log_manager
+import config_backup
 
 # ── 配置 ──────────────────────────────────────────────────────────────
 
@@ -419,9 +420,36 @@ class MainWindow(FluentWindow):
         card.viewLayout.addWidget(self.log_text)
         root.addWidget(card, 1)
 
+        # ── 配置备份 ──
+        bk_card = HeaderCardWidget(self)
+        bk_card.setTitle("配置备份")
+        bk_grid = QGridLayout()
+        bk_grid.setContentsMargins(16, 10, 16, 10)
+        bk_grid.setHorizontalSpacing(10)
+        bk_grid.setVerticalSpacing(8)
+
+        self.combo_backup = ComboBox()
+        self.combo_backup.setMinimumHeight(34)
+        bk_grid.addWidget(self.combo_backup, 0, 0)
+
+        btn_restore_bk = PushButton("还原选中备份")
+        btn_restore_bk.setMinimumHeight(34)
+        btn_restore_bk.clicked.connect(self._restore_config_backup)
+        bk_grid.addWidget(btn_restore_bk, 0, 1)
+
+        btn_open_bk = TransparentPushButton("打开备份目录")
+        btn_open_bk.setMinimumHeight(34)
+        btn_open_bk.setIcon(FIF.FOLDER)
+        btn_open_bk.clicked.connect(config_backup.open_backup_folder)
+        bk_grid.addWidget(btn_open_bk, 0, 2)
+
+        bk_grid.setColumnStretch(0, 1)
+        bk_card.viewLayout.addLayout(bk_grid)
+        root.addWidget(bk_card)
+
         # ── 归档列表 ──
         arc_card = HeaderCardWidget(self)
-        arc_card.setTitle("已归档 (.7z)")
+        arc_card.setTitle("日志归档 (.7z)")
         self.lbl_archives = CaptionLabel("无")
         self.lbl_archives.setWordWrap(True)
         self.lbl_archives.setStyleSheet("color:#666;font-size:12px;")
@@ -441,6 +469,41 @@ class MainWindow(FluentWindow):
         self.combo_date.blockSignals(False)
         if dates:
             self._load_log_content(dates[0])
+
+        # 归档列表
+        arcs = log_manager.list_archives()
+        self.lbl_archives.setText("  ".join(arcs) if arcs else "无归档文件")
+
+        # 配置备份列表
+        self._refresh_backup_list()
+
+    def _refresh_backup_list(self):
+        """刷新配置备份下拉列表"""
+        self.combo_backup.blockSignals(True)
+        self.combo_backup.clear()
+        backups = config_backup.list_backups()
+        if not backups:
+            self.combo_backup.addItem("（无备份）", userData=None)
+        else:
+            for b in backups:
+                self.combo_backup.addItem(b, userData=b)
+        self.combo_backup.blockSignals(False)
+
+    def _restore_config_backup(self):
+        """还原选中的配置备份"""
+        name = self.combo_backup.currentData()
+        if not name:
+            InfoBar.warning("提示", "没有可还原的备份", parent=self, position=InfoBarPosition.TOP)
+            return
+        ok = config_backup.restore(name)
+        if ok:
+            self._log(f"[还原] config ← {name}")
+            InfoBar.success("成功", f"已还原: {name}", parent=self, position=InfoBarPosition.TOP)
+            # 重新加载配置
+            self.config = load_config()
+            self._load_config()
+        else:
+            InfoBar.error("失败", "还原失败", parent=self, position=InfoBarPosition.TOP)
 
         # 归档列表
         arcs = log_manager.list_archives()
@@ -542,6 +605,20 @@ class MainWindow(FluentWindow):
         if not url:
             InfoBar.warning("提示", "请填写 URL", parent=self, position=InfoBarPosition.TOP)
             return
+
+        # 应用前先保存当前配置并备份
+        self.config["target"] = {
+            "base_url": url,
+            "api_key": key,
+            "name": self.combo.currentData() or "custom",
+            "enabled": True,
+        }
+        save_config(self.config)
+        bk = config_backup.backup()
+        if bk:
+            self._log(f"[备份] config → {bk}")
+            self._refresh_backup_list()
+
         self.btn_apply.setEnabled(False)
         self.btn_apply.setText("应用中...")
         self._log(f"[补丁] {url}")
