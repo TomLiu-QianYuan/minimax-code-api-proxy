@@ -515,11 +515,11 @@ class MainWindow(FluentWindow):
         root.addWidget(scroll)
 
         container = QWidget()
-        container.setStyleSheet("""
-            QWidget { background:#1e1e1e; }
-            HeaderCardWidget { background:#252525; border:1px solid #333; border-radius:8px; }
-            HeaderCardWidget QLabel { color:#aaa; }
-        """)
+        container.setAutoFillBackground(True)
+        p = container.palette()
+        from PyQt6.QtGui import QColor
+        p.setColor(container.backgroundRole(), QColor("#1e1e1e"))
+        container.setPalette(p)
         scroll.setWidget(container)
         cl = QVBoxLayout(container)
         cl.setContentsMargins(24, 16, 24, 16)
