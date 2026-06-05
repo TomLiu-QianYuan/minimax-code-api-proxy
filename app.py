@@ -509,7 +509,7 @@ class MainWindow(FluentWindow):
             "的请求发送到你指定的 API 端点，同时自动备份原始文件，随时可还原。"
         )
         intro_lbl.setWordWrap(True)
-        intro_lbl.setStyleSheet("color:#ccc;line-height:1.6;")
+        intro_lbl.setStyleSheet("color:#999;line-height:1.6;")
         intro_card.viewLayout.addWidget(intro_lbl)
         cl.addWidget(intro_card)
 
@@ -526,7 +526,7 @@ class MainWindow(FluentWindow):
             "7.  重新打开 MiniMax Code，即可使用新 API"
         )
         steps_lbl.setWordWrap(True)
-        steps_lbl.setStyleSheet("color:#ccc;line-height:1.8;")
+        steps_lbl.setStyleSheet("color:#999;line-height:1.8;")
         steps_card.viewLayout.addWidget(steps_lbl)
         cl.addWidget(steps_card)
 
@@ -542,7 +542,7 @@ class MainWindow(FluentWindow):
             "  补丁会将 daemon.js 中的 @ai-sdk/anthropic 替换为 @ai-sdk/openai。"
         )
         fmt_lbl.setWordWrap(True)
-        fmt_lbl.setStyleSheet("color:#ccc;line-height:1.8;")
+        fmt_lbl.setStyleSheet("color:#999;line-height:1.8;")
         fmt_card.viewLayout.addWidget(fmt_lbl)
         cl.addWidget(fmt_card)
 
@@ -560,7 +560,7 @@ class MainWindow(FluentWindow):
             "A: 日志页 → 配置备份 → 选择之前的备份 → 还原。"
         )
         faq_lbl.setWordWrap(True)
-        faq_lbl.setStyleSheet("color:#ccc;line-height:1.8;")
+        faq_lbl.setStyleSheet("color:#999;line-height:1.8;")
         faq_card.viewLayout.addWidget(faq_lbl)
         cl.addWidget(faq_card)
 
@@ -574,7 +574,7 @@ class MainWindow(FluentWindow):
             "作者    Made with Claude · Anthropic AI Assistant"
         )
         info_lbl.setWordWrap(True)
-        info_lbl.setStyleSheet("color:#aaa;font-family:Consolas,monospace;line-height:1.6;")
+        info_lbl.setStyleSheet("color:#888;font-family:Consolas,monospace;line-height:1.6;")
         info_card.viewLayout.addWidget(info_lbl)
         cl.addWidget(info_card)
 
@@ -585,8 +585,11 @@ class MainWindow(FluentWindow):
     def _setup_tray(self):
         """初始化系统托盘图标和菜单"""
         self.tray = QSystemTrayIcon(self)
-        # 使用应用窗口图标
-        self.tray.setIcon(self.windowIcon())
+        # 使用标准图标（齿轮/设置图标）
+        from PyQt6.QtWidgets import QStyle
+        icon = QApplication.style().standardIcon(QStyle.StandardPixmap.SP_ComputerIcon)
+        self.tray.setIcon(icon)
+        self.setWindowIcon(icon)
         self.tray.setToolTip("MiniMax Code API 代理")
 
         menu = QMenu()
