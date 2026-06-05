@@ -11,7 +11,7 @@ from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QFont, QIcon, QAction
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
-    QFrame, QLabel, QLineEdit, QSystemTrayIcon, QMenu,
+    QFrame, QLabel, QLineEdit, QSystemTrayIcon, QMenu, QScrollArea,
 )
 from qfluentwidgets import (
     FluentWindow, FluentIcon as FIF, SubtitleLabel, BodyLabel,
@@ -249,8 +249,6 @@ class MainWindow(FluentWindow):
         btn_row.addWidget(btn1)
         root.addLayout(btn_row)
 
-        root.addStretch()
-
     def _dash_cell(self, grid, row, col, title, value_label):
         """Dashboard 状态单元格"""
         cell = QVBoxLayout()
@@ -405,8 +403,6 @@ class MainWindow(FluentWindow):
         tip.setStyleSheet("color:#555;")
         root.addWidget(tip)
 
-        root.addStretch()
-
     # ── 日志页 ────────────────────────────────────────────────────────
 
     def _build_log(self):
@@ -489,8 +485,19 @@ class MainWindow(FluentWindow):
 
     def _build_help(self):
         root = QVBoxLayout(self.page_help)
-        root.setContentsMargins(24, 16, 24, 16)
-        root.setSpacing(10)
+        root.setContentsMargins(0, 0, 0, 0)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setStyleSheet("QScrollArea{background:transparent;border:none;}")
+        root.addWidget(scroll)
+
+        container = QWidget()
+        scroll.setWidget(container)
+        cl = QVBoxLayout(container)
+        cl.setContentsMargins(24, 16, 24, 16)
+        cl.setSpacing(10)
 
         # ── 简介 ──
         intro_card = HeaderCardWidget(self)
@@ -504,7 +511,7 @@ class MainWindow(FluentWindow):
         intro_lbl.setWordWrap(True)
         intro_lbl.setStyleSheet("color:#ccc;line-height:1.6;")
         intro_card.viewLayout.addWidget(intro_lbl)
-        root.addWidget(intro_card)
+        cl.addWidget(intro_card)
 
         # ── 使用步骤 ──
         steps_card = HeaderCardWidget(self)
@@ -521,7 +528,7 @@ class MainWindow(FluentWindow):
         steps_lbl.setWordWrap(True)
         steps_lbl.setStyleSheet("color:#ccc;line-height:1.8;")
         steps_card.viewLayout.addWidget(steps_lbl)
-        root.addWidget(steps_card)
+        cl.addWidget(steps_card)
 
         # ── API 格式说明 ──
         fmt_card = HeaderCardWidget(self)
@@ -537,7 +544,7 @@ class MainWindow(FluentWindow):
         fmt_lbl.setWordWrap(True)
         fmt_lbl.setStyleSheet("color:#ccc;line-height:1.8;")
         fmt_card.viewLayout.addWidget(fmt_lbl)
-        root.addWidget(fmt_card)
+        cl.addWidget(fmt_card)
 
         # ── 常见问题 ──
         faq_card = HeaderCardWidget(self)
@@ -555,23 +562,23 @@ class MainWindow(FluentWindow):
         faq_lbl.setWordWrap(True)
         faq_lbl.setStyleSheet("color:#ccc;line-height:1.8;")
         faq_card.viewLayout.addWidget(faq_lbl)
-        root.addWidget(faq_card)
+        cl.addWidget(faq_card)
 
         # ── 项目信息 ──
         info_card = HeaderCardWidget(self)
         info_card.setTitle("项目信息")
         info_lbl = BodyLabel(
             "GitHub  TomLiu-QianYuan/minimax-code-api-proxy\n"
-            "版本    v1.1.0\n"
+            "版本    v1.2.0\n"
             "协议    MIT\n"
             "作者    Made with Claude · Anthropic AI Assistant"
         )
         info_lbl.setWordWrap(True)
         info_lbl.setStyleSheet("color:#aaa;font-family:Consolas,monospace;line-height:1.6;")
         info_card.viewLayout.addWidget(info_lbl)
-        root.addWidget(info_card)
+        cl.addWidget(info_card)
 
-        root.addStretch()
+        cl.addStretch()
 
     # ── 系统托盘 ──────────────────────────────────────────────────────
 
