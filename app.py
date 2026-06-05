@@ -23,6 +23,7 @@ from qfluentwidgets import (
 )
 
 from patcher import DaemonPatcher
+import log_manager
 
 # ── 配置 ──────────────────────────────────────────────────────────────
 
@@ -134,6 +135,12 @@ class MainWindow(FluentWindow):
         self._load_config()
         self._refresh()
         self._refresh_dash()
+
+        # 启动时自动归档旧日志
+        archived = log_manager.archive_old_logs()
+        if archived:
+            self._log(f"[归档] 已归档 {len(archived)} 个旧日志")
+        self._refresh_log_list()
 
     # ── Dashboard ─────────────────────────────────────────────────────
 
@@ -353,51 +360,76 @@ class MainWindow(FluentWindow):
         root.setContentsMargins(24, 20, 24, 20)
         root.setSpacing(18)
 
-        # 状态行
+        # ── 日期选择 + 操作按钮 ──
+        top = QHBoxLayout()
+        top.setSpacing(10)
+
+        self.combo_date = ComboBox()
+        self.combo_date.setMinimumHeight(34)
+        self.combo_date.currentIndexChanged.connect(self._on_date_changed)
+        top.addWidget(self.combo_date, 1)
+
+        btn_open_log = TransparentPushButton("打开日志目录")
+        btn_open_log.setMinimumHeight(34)
+        btn_open_log.setIcon(FIF.FOLDER)
+        btn_open_log.clicked.connect(log_manager.open_log_folder)
+        top.addWidget(btn_open_log)
+
+        btn_open_arc = TransparentPushButton("打开归档目录")
+        btn_open_arc.setMinimumHeight(34)
+        btn_open_arc.setIcon(FIF.FOLDER)
+        btn_open_arc.clicked.connect(log_manager.open_archive_folder)
+        top.addWidget(btn_open_arc)
+
+        root.addLayout(top)
+
+        # ── 日志内容 ──
         card = HeaderCardWidget(self)
-        card.setTitle("状态")
-        sg = QGridLayout()
-        sg.setContentsMargins(16, 10, 16, 10)
-        sg.setHorizontalSpacing(24)
-        sg.setVerticalSpacing(6)
-
-        self.dot_patch = QLabel()
-        self.dot_backup = QLabel()
-        self._set_dot(self.dot_patch, "补丁：检查中...", "#888")
-        self._set_dot(self.dot_backup, "备份：检查中...", "#888")
-        sg.addWidget(self.dot_patch, 0, 0)
-        sg.addWidget(self.dot_backup, 0, 1)
-
-        sg.addWidget(self._label("URL"), 1, 0, 1, 2)
-        self.lbl_urls = CaptionLabel("")
-        self.lbl_urls.setWordWrap(True)
-        self.lbl_urls.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        self.lbl_urls.setStyleSheet(
-            "color:#a5b4fc; font-family:Consolas,monospace; font-size:12px;"
-            "background:#111; padding:8px; border-radius:6px; border:1px solid #222;"
-        )
-        self.lbl_urls.setMinimumHeight(48)
-        sg.addWidget(self.lbl_urls, 2, 0, 1, 2)
-
-        card.viewLayout.addLayout(sg)
-        root.addWidget(card)
-
-        btn = TransparentPushButton("刷新")
-        btn.setMinimumHeight(38)
-        btn.clicked.connect(self._refresh)
-        root.addWidget(btn, alignment=Qt.AlignmentFlag.AlignLeft)
-
-        # 日志
-        card2 = HeaderCardWidget(self)
-        card2.setTitle("日志")
+        card.setTitle("日志内容")
         self.log_text = PlainTextEdit()
         self.log_text.setReadOnly(True)
         self.log_text.setStyleSheet(
             "QPlainTextEdit{background:#111;color:#aaa;border:1px solid #222;"
             "border-radius:6px;font-family:Consolas,monospace;font-size:12px;padding:8px;}"
         )
-        card2.viewLayout.addWidget(self.log_text)
-        root.addWidget(card2, 1)
+        card.viewLayout.addWidget(self.log_text)
+        root.addWidget(card, 1)
+
+        # ── 归档列表 ──
+        arc_card = HeaderCardWidget(self)
+        arc_card.setTitle("已归档 (.7z)")
+        self.lbl_archives = CaptionLabel("无")
+        self.lbl_archives.setWordWrap(True)
+        self.lbl_archives.setStyleSheet("color:#666;font-size:12px;")
+        arc_card.viewLayout.addWidget(self.lbl_archives)
+        root.addWidget(arc_card)
+
+    def _refresh_log_list(self):
+        """刷新日期下拉列表"""
+        self.combo_date.blockSignals(True)
+        self.combo_date.clear()
+        dates = log_manager.list_log_dates()
+        if not dates:
+            self.combo_date.addItem("（无日志）", userData=None)
+        else:
+            for d in dates:
+                self.combo_date.addItem(d, userData=d)
+        self.combo_date.blockSignals(False)
+        if dates:
+            self._load_log_content(dates[0])
+
+        # 归档列表
+        arcs = log_manager.list_archives()
+        self.lbl_archives.setText("  ".join(arcs) if arcs else "无归档文件")
+
+    def _on_date_changed(self, idx):
+        date = self.combo_date.currentData()
+        if date:
+            self._load_log_content(date)
+
+    def _load_log_content(self, date_str):
+        content = log_manager.read_log(date_str)
+        self.log_text.setPlainText(content if content else "（该日期无日志）")
 
     # ── 工具方法 ──────────────────────────────────────────────────────
 
@@ -407,12 +439,12 @@ class MainWindow(FluentWindow):
         lbl.setStyleSheet("color:#999;")
         return lbl
 
-    def _set_dot(self, label, text, color):
-        label.setText(f'<span style="color:{color}">\u25cf</span>  {text}')
-        label.setStyleSheet("font-size:13px;")
-
     def _log(self, msg):
-        self.log_text.appendPlainText(msg)
+        log_manager.write_log(msg)
+        # 如果当前查看的是今天的日志，实时更新显示
+        current_date = self.combo_date.currentData()
+        if current_date == log_manager._today_str():
+            self.log_text.appendPlainText(msg)
 
     # ── 数据加载 ──────────────────────────────────────────────────────
 
@@ -477,18 +509,6 @@ class MainWindow(FluentWindow):
 
     def _refresh(self):
         s = self.patcher.status()
-        self._set_dot(self.dot_patch,
-                      "已打补丁" if s["is_patched"] else "未修改",
-                      "#4ade80" if s["is_patched"] else "#888")
-        self._set_dot(self.dot_backup,
-                      "有备份" if s["has_backup"] else "无备份",
-                      "#4ade80" if s["has_backup"] else "#888")
-
-        urls = s.get("current_urls", {})
-        self.lbl_urls.setText(
-            "\n".join(f"  {k}:  {v}" for k, v in urls.items())
-            if urls else "  无法读取"
-        )
         self._log(f"[状态] 补丁={'是' if s['is_patched'] else '否'}  备份={'是' if s['has_backup'] else '否'}")
         self._refresh_dash()
 
