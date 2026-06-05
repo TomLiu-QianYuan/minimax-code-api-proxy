@@ -494,6 +494,7 @@ class MainWindow(FluentWindow):
         root.addWidget(scroll)
 
         container = QWidget()
+        container.setStyleSheet("background:#1e1e1e;")
         scroll.setWidget(container)
         cl = QVBoxLayout(container)
         cl.setContentsMargins(24, 16, 24, 16)
