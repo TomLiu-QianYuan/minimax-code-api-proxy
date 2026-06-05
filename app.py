@@ -160,6 +160,12 @@ class MainWindow(FluentWindow):
         self._build_log()
         self.addSubInterface(self.page_log, FIF.CHAT, "日志")
 
+        # Tab 4: 帮助
+        self.page_help = QWidget()
+        self.page_help.setObjectName("help")
+        self._build_help()
+        self.addSubInterface(self.page_help, FIF.HELP, "帮助")
+
         self._load_config()
         self._refresh()
         self._refresh_dash()
@@ -475,6 +481,94 @@ class MainWindow(FluentWindow):
         self.lbl_archives.setStyleSheet("color:#666;font-size:12px;")
         arc_card.viewLayout.addWidget(self.lbl_archives)
         root.addWidget(arc_card)
+
+    # ── 帮助页 ────────────────────────────────────────────────────────
+
+    def _build_help(self):
+        root = QVBoxLayout(self.page_help)
+        root.setContentsMargins(24, 20, 24, 20)
+        root.setSpacing(18)
+
+        # ── 简介 ──
+        intro_card = HeaderCardWidget(self)
+        intro_card.setTitle("简介")
+        intro_lbl = BodyLabel(
+            "MiniMax Code API 代理 是一个桌面工具，用于将 MiniMax Code 内置的 API "
+            "替换为任意外部 API（DeepSeek、Mimo、OpenAI、SiliconFlow 等）。\n\n"
+            "通过修改 daemon.js 中的预设地址和 npm 包引用，让 MiniMax Code "
+            "的请求发送到你指定的 API 端点，同时自动备份原始文件，随时可还原。"
+        )
+        intro_lbl.setWordWrap(True)
+        intro_lbl.setStyleSheet("color:#ccc;line-height:1.6;")
+        intro_card.viewLayout.addWidget(intro_lbl)
+        root.addWidget(intro_card)
+
+        # ── 使用步骤 ──
+        steps_card = HeaderCardWidget(self)
+        steps_card.setTitle("使用步骤")
+        steps_lbl = BodyLabel(
+            "1.  关闭 MiniMax Code\n"
+            "2.  打开本工具，进入「控制台」\n"
+            "3.  选择预设（Mimo / DeepSeek / OpenAI...）或选「自定义」填写自己的 URL\n"
+            "4.  填入 API Key（Mimo 预设已自动填入）\n"
+            "5.  确认 API 格式（Anthropic / OpenAI，预设会自动匹配）\n"
+            "6.  点击「应用补丁」或拨开开关\n"
+            "7.  重新打开 MiniMax Code，即可使用新 API"
+        )
+        steps_lbl.setWordWrap(True)
+        steps_lbl.setStyleSheet("color:#ccc;line-height:1.8;")
+        steps_card.viewLayout.addWidget(steps_lbl)
+        root.addWidget(steps_card)
+
+        # ── API 格式说明 ──
+        fmt_card = HeaderCardWidget(self)
+        fmt_card.setTitle("API 格式说明")
+        fmt_lbl = BodyLabel(
+            "Anthropic 格式（/messages）\n"
+            "  适用于 Mimo、Claude 等兼容 Anthropic 协议的 API。\n"
+            "  补丁会将 daemon.js 中的 @ai-sdk/openai 替换为 @ai-sdk/anthropic。\n\n"
+            "OpenAI 格式（/chat/completions）\n"
+            "  适用于 DeepSeek、OpenAI、SiliconFlow、Groq、One API 等。\n"
+            "  补丁会将 daemon.js 中的 @ai-sdk/anthropic 替换为 @ai-sdk/openai。"
+        )
+        fmt_lbl.setWordWrap(True)
+        fmt_lbl.setStyleSheet("color:#ccc;line-height:1.8;")
+        fmt_card.viewLayout.addWidget(fmt_lbl)
+        root.addWidget(fmt_card)
+
+        # ── 常见问题 ──
+        faq_card = HeaderCardWidget(self)
+        faq_card.setTitle("常见问题")
+        faq_lbl = BodyLabel(
+            "Q: 打补丁后 MiniMax Code 报错？\n"
+            "A: 确认 URL 和 Key 正确，且 API 支持对应格式（Anthropic / OpenAI）。\n\n"
+            "Q: MiniMax Code 更新后补丁失效？\n"
+            "A: 更新会覆盖 daemon.js，重新打一次补丁即可。\n\n"
+            "Q: 怎么完全恢复？\n"
+            "A: 拨回 OFF 或点「恢复原始」，自动还原 daemon.js。\n\n"
+            "Q: 配置文件搞乱了？\n"
+            "A: 日志页 → 配置备份 → 选择之前的备份 → 还原。"
+        )
+        faq_lbl.setWordWrap(True)
+        faq_lbl.setStyleSheet("color:#ccc;line-height:1.8;")
+        faq_card.viewLayout.addWidget(faq_lbl)
+        root.addWidget(faq_card)
+
+        # ── 项目信息 ──
+        info_card = HeaderCardWidget(self)
+        info_card.setTitle("项目信息")
+        info_lbl = BodyLabel(
+            "GitHub  TomLiu-QianYuan/minimax-code-api-proxy\n"
+            "版本    v1.1.0\n"
+            "协议    MIT\n"
+            "作者    Made with Claude · Anthropic AI Assistant"
+        )
+        info_lbl.setWordWrap(True)
+        info_lbl.setStyleSheet("color:#aaa;font-family:Consolas,monospace;line-height:1.6;")
+        info_card.viewLayout.addWidget(info_lbl)
+        root.addWidget(info_card)
+
+        root.addStretch()
 
     def _refresh_log_list(self):
         """刷新日期下拉列表"""
