@@ -4,9 +4,11 @@
 
 <br>
 
+# MiniMax Code API Proxy
+
 **你的 MiniMax Code，你做主。**
 
-将 MiniMax Code 内置 API 替换为任意外部 API — DeepSeek、Mimo、OpenAI、SiliconFlow... 一键切换，想用哪个用哪个。
+将 MiniMax Code 内置 API 替换为任意外部 API — DeepSeek、Mimo、OpenAI、SiliconFlow、Groq... 一键切换，想用哪个用哪个。
 
 <br>
 
@@ -33,6 +35,7 @@ MiniMax Code 绑定了自家 API，无法切换到其他模型。这个工具帮
 - **省钱** — 用 DeepSeek / Mimo 等更便宜的 API
 - **自由** — 想用什么模型就用什么模型
 - **安全** — 自动备份原始文件，随时一键还原
+- **方便** — 最小化到系统托盘，右键快速切换
 
 ## 效果预览
 
@@ -44,8 +47,8 @@ MiniMax Code 绑定了自家 API，无法切换到其他模型。这个工具帮
 │   │ ● 已打补丁   │    │ ● 有备份     │          │
 │   └─────────────┘    └─────────────┘          │
 │   ┌─────────────┐    ┌─────────────┐          │
-│   │ 当前预设     │    │ 目标 URL     │          │
-│   │ Mimo (SGP)  │    │ token-pla.. │          │
+│   │ 当前预设     │    │ API 格式     │          │
+│   │ Mimo (SGP)  │    │ Anthropic   │          │
 │   └─────────────┘    └─────────────┘          │
 │                                                │
 │   文件路径                                     │
@@ -62,23 +65,22 @@ MiniMax Code 绑定了自家 API，无法切换到其他模型。这个工具帮
 │   预设  [ Mimo (SGP) ▼          ]              │
 │   URL   [ https://token-plan-sgp...       ]    │
 │   Key   [ tp-sdixcpi5ch8y24o5u...     👁 ]    │
+│   格式  [ Anthropic (/messages) ▼     ]        │
 │                                                │
 │   [ 应用补丁 ]        [ 恢复原始 ]             │
 └────────────────────────────────────────────────┘
 
-┌─ 日志 ────────────────────────────────────────┐
-│   [2026-06-05 ▼]  [打开日志目录] [打开归档]    │
+┌─ 系统托盘 ────────────────────────────────────┐
 │                                                │
-│   [21:09:38] [状态] 补丁=是  备份=是           │
-│   [21:09:38] [成功] 补丁已应用                  │
-│   [21:09:38]   · 替换 cn-prod URL              │
-│   [21:09:38]   · 禁用 URL 同步保护             │
+│   ● MiniMax Code API 代理                      │
+│   ├─ 切换为 Mimo (SGP)                         │
+│   ├─ 切换为 Mimo (CN)                          │
+│   ├─ 切换为 DeepSeek                           │
+│   ├─ ─────────────                             │
+│   ├─ 恢复原始 API                              │
+│   ├─ 打开主窗口                                │
+│   └─ 退出                                      │
 │                                                │
-│   配置备份                                      │
-│   [2026-06-05_210938_config.7z ▼] [还原] [📂] │
-│                                                │
-│   日志归档                                      │
-│   2026-06-01.7z  2026-05-30.7z                 │
 └────────────────────────────────────────────────┘
 ```
 
@@ -98,32 +100,37 @@ python app.py
 2. 打开本工具
 3. 在「控制台」选择预设（Mimo / DeepSeek / OpenAI...）
 4. 填入 API Key
-5. 拨开「应用补丁」
+5. 点击「应用补丁」或拨开开关
 6. 重新打开 MiniMax Code
 
 完成！MiniMax Code 现在用的是你选的 API。
 
+**最小化到托盘：** 关闭窗口时自动最小化到系统托盘，右键托盘图标可快速切换 API 或恢复原始。
+
 ## 支持的 API
 
-| 预设 | 说明 | Key |
-|:-----|:-----|:----|
-| **Mimo (SGP)** | 小米 Mimo v2.5 Pro · 新加坡节点 | 自动填入 |
-| **Mimo (CN)** | 小米 Mimo v2.5 Pro · 国内节点 | 自动填入 |
-| **DeepSeek** | DeepSeek V3 / R1 | 手动 |
-| **OpenAI** | GPT-4o / GPT-4o-mini | 手动 |
-| **SiliconFlow** | 国产模型聚合 | 手动 |
-| **Groq** | 高速推理 | 手动 |
-| **One API** | 自建中转 | 手动 |
-| **自定义** | 任意 OpenAI / Anthropic 兼容 API | 手动 |
+| 预设 | 格式 | 说明 | Key |
+|:-----|:-----|:-----|:----|
+| **Mimo (SGP)** | Anthropic | 小米 Mimo v2.5 Pro · 新加坡节点 | 自动填入 |
+| **Mimo (CN)** | Anthropic | 小米 Mimo v2.5 Pro · 国内节点 | 自动填入 |
+| **DeepSeek** | OpenAI | DeepSeek V3 / R1 | 手动 |
+| **OpenAI** | OpenAI | GPT-4o / GPT-4o-mini | 手动 |
+| **SiliconFlow** | OpenAI | 国产模型聚合 | 手动 |
+| **Groq** | OpenAI | 高速推理 | 手动 |
+| **One API** | OpenAI | 自建中转 | 手动 |
+| **自定义** | 可选 | 任意 OpenAI / Anthropic 兼容 API | 手动 |
 
 ## 功能特性
 
 | 功能 | 说明 |
 |:-----|:-----|
 | 一键切换 | 开关拨一下，即刻切换 API |
+| API 格式选择 | 支持 Anthropic (`/messages`) 和 OpenAI (`/chat/completions`) 两种格式 |
+| 系统托盘 | 最小化到托盘，右键快速切换预设 / 恢复原始 |
 | 自动备份 | daemon.js 和 config.yaml 双重备份 |
 | 一键还原 | 随时恢复原版，不留痕迹 |
 | Dashboard | 实时状态总览 |
+| 帮助文档 | 内置使用说明和常见问题 |
 | 日志管理 | 按日期保存，3 天自动归档 .7z |
 | 配置备份 | 每次打补丁自动备份 config，UI 直接还原 |
 | 自动检测 | 自动查找 MiniMax Code 安装路径 |
@@ -147,13 +154,13 @@ MiniMax Code 启动
 补丁修改 `daemon.js` 中的 3 处：
 1. `PRESET_BASE_URLS` → 替换为目标 API 地址
 2. `isManagedPresetBaseUrl()` → 禁用 URL 同步保护
-3. `apiKey` → 替换为你的 Key
+3. `npm` 包引用 → 根据格式切换 `@ai-sdk/anthropic` 或 `@ai-sdk/openai`
 
 ## 项目结构
 
 ```
 model-proxy/
-├── app.py              # 主程序 (PyQt6 GUI)
+├── app.py              # 主程序 (PyQt6 GUI + 系统托盘)
 ├── patcher.py          # daemon.js 补丁引擎
 ├── config_backup.py    # 配置备份管理
 ├── log_manager.py      # 日志管理 (按日期 + .7z 归档)
@@ -166,16 +173,19 @@ model-proxy/
 ## 常见问题
 
 **Q: 打补丁后 MiniMax Code 报错？**
-A: 确认你选的 API 地址和 Key 正确，且 API 支持 Anthropic 兼容格式。
+A: 确认你选的 API 地址和 Key 正确，且 API 支持对应格式（Anthropic / OpenAI）。
 
 **Q: MiniMax Code 更新后补丁失效？**
 A: 更新会覆盖 `daemon.js`，重新打一次补丁即可。
 
 **Q: 怎么完全恢复？**
-A: 拨回 OFF 或点「恢复原始」，自动还原 `daemon.js`。
+A: 拨回 OFF、点「恢复原始」、或右键托盘图标选「恢复原始 API」。
 
 **Q: 配置文件搞乱了？**
 A: 日志页 → 配置备份 → 选择之前的备份 → 还原。
+
+**Q: 怎么彻底退出？**
+A: 右键系统托盘图标 → 退出。或在主窗口关闭后从托盘退出。
 
 ## Star History
 
@@ -197,7 +207,7 @@ A: 日志页 → 配置备份 → 选择之前的备份 → 还原。
 
 ### What is this?
 
-Replaces MiniMax Code's built-in API with any external API endpoint (DeepSeek, Mimo, OpenAI, etc.). One-click switch, auto backup, Fluent UI.
+Replaces MiniMax Code's built-in API with any external API endpoint (DeepSeek, Mimo, OpenAI, etc.). One-click switch, auto backup, system tray, Fluent UI.
 
 ### Quick Start
 
@@ -215,10 +225,13 @@ python app.py
 ### Features
 
 - One-click API switching with toggle
+- API format selector: Anthropic (`/messages`) and OpenAI (`/chat/completions`)
+- System tray: minimize to tray, right-click to quick-switch presets or restore original
 - Built-in presets: Mimo, DeepSeek, OpenAI, SiliconFlow, Groq, One API
 - Auto backup daemon.js + config.yaml before patching
 - One-click restore
 - Dashboard with real-time status
+- Built-in help and FAQ
 - Log management with date-based archiving (.7z)
 - Config backup/restore from UI
 - Auto-detect MiniMax Code installation
@@ -226,16 +239,16 @@ python app.py
 
 ### Supported APIs
 
-| Preset | Description | Key |
-|:-------|:------------|:----|
-| **Mimo (SGP)** | Xiaomi Mimo v2.5 Pro (Singapore) | Pre-filled |
-| **Mimo (CN)** | Xiaomi Mimo v2.5 Pro (China) | Pre-filled |
-| **DeepSeek** | DeepSeek V3 / R1 | Manual |
-| **OpenAI** | GPT-4o / GPT-4o-mini | Manual |
-| **SiliconFlow** | Chinese model aggregator | Manual |
-| **Groq** | High-speed inference | Manual |
-| **One API** | Self-hosted relay | Manual |
-| **Custom** | Any OpenAI / Anthropic compatible | Manual |
+| Preset | Format | Description | Key |
+|:-------|:-------|:------------|:----|
+| **Mimo (SGP)** | Anthropic | Xiaomi Mimo v2.5 Pro (Singapore) | Pre-filled |
+| **Mimo (CN)** | Anthropic | Xiaomi Mimo v2.5 Pro (China) | Pre-filled |
+| **DeepSeek** | OpenAI | DeepSeek V3 / R1 | Manual |
+| **OpenAI** | OpenAI | GPT-4o / GPT-4o-mini | Manual |
+| **SiliconFlow** | OpenAI | Chinese model aggregator | Manual |
+| **Groq** | OpenAI | High-speed inference | Manual |
+| **One API** | OpenAI | Self-hosted relay | Manual |
+| **Custom** | Choose | Any OpenAI / Anthropic compatible | Manual |
 
 ### License
 

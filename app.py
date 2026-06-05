@@ -8,10 +8,10 @@ from pathlib import Path
 
 import yaml
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QFont, QIcon, QAction
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
-    QFrame, QLabel, QLineEdit,
+    QFrame, QLabel, QLineEdit, QSystemTrayIcon, QMenu,
 )
 from qfluentwidgets import (
     FluentWindow, FluentIcon as FIF, SubtitleLabel, BodyLabel,
@@ -165,6 +165,9 @@ class MainWindow(FluentWindow):
         self.page_help.setObjectName("help")
         self._build_help()
         self.addSubInterface(self.page_help, FIF.HELP, "帮助")
+
+        # ── 系统托盘 ──
+        self._setup_tray()
 
         self._load_config()
         self._refresh()
@@ -569,6 +572,128 @@ class MainWindow(FluentWindow):
         root.addWidget(info_card)
 
         root.addStretch()
+
+    # ── 系统托盘 ──────────────────────────────────────────────────────
+
+    def _setup_tray(self):
+        """初始化系统托盘图标和菜单"""
+        self.tray = QSystemTrayIcon(self)
+        # 使用应用窗口图标
+        self.tray.setIcon(self.windowIcon())
+        self.tray.setToolTip("MiniMax Code API 代理")
+
+        menu = QMenu()
+
+        # 快速切换预设子菜单
+        switch_menu = menu.addMenu("快速切换")
+        for name in API_PRESETS:
+            if name == "自定义":
+                continue
+            action = QAction(name, self)
+            action.triggered.connect(lambda checked, n=name: self._tray_switch(n))
+            switch_menu.addAction(action)
+
+        menu.addSeparator()
+
+        # 恢复原始
+        act_restore = QAction("恢复原始 API", self)
+        act_restore.triggered.connect(self._tray_restore)
+        menu.addAction(act_restore)
+
+        menu.addSeparator()
+
+        # 打开主窗口
+        act_show = QAction("打开主窗口", self)
+        act_show.triggered.connect(self._tray_show)
+        menu.addAction(act_show)
+
+        menu.addSeparator()
+
+        # 退出
+        act_quit = QAction("退出", self)
+        act_quit.triggered.connect(QApplication.quit)
+        menu.addAction(act_quit)
+
+        self.tray.setContextMenu(menu)
+        self.tray.activated.connect(self._on_tray_activated)
+        self.tray.show()
+
+    def _on_tray_activated(self, reason):
+        if reason == QSystemTrayIcon.ActivationReason.DoubleClick:
+            self._tray_show()
+
+    def _tray_show(self):
+        self.showNormal()
+        self.activateWindow()
+        self.raise_()
+
+    def _tray_switch(self, preset_name):
+        """从托盘快速切换到指定预设"""
+        if preset_name not in API_PRESETS:
+            return
+        p = API_PRESETS[preset_name]
+        url = p.get("url", "")
+        key = p.get("key", "")
+        api_type = p.get("type", "openai")
+        if not url:
+            return
+
+        self.config["target"] = {
+            "base_url": url,
+            "api_key": key,
+            "name": preset_name,
+            "api_type": api_type,
+            "enabled": True,
+        }
+        save_config(self.config)
+        config_backup.backup()
+
+        self._log(f"[托盘] 切换到 {preset_name}")
+        self._pw = PatchWorker(self.patcher, url, key, api_type)
+        self._pw.finished.connect(lambda ok, msg, ch: self._on_tray_patched(ok, msg, ch, preset_name))
+        self._pw.start()
+
+    def _on_tray_patched(self, ok, msg, changes, preset_name):
+        if ok:
+            self._log(f"[托盘] 切换成功: {preset_name}")
+            for c in changes:
+                self._log(f"  · {c}")
+            self.tray.showMessage("切换成功", f"已切换到 {preset_name}", QSystemTrayIcon.MessageIcon.Information, 2000)
+        else:
+            self._log(f"[托盘] 切换失败: {msg}")
+            self.tray.showMessage("切换失败", msg, QSystemTrayIcon.MessageIcon.Warning, 3000)
+        self._refresh()
+        self._load_config()
+
+    def _tray_restore(self):
+        """从托盘恢复原始 API"""
+        self._log("[托盘] 恢复原始 API...")
+        self._rw = RestoreWorker(self.patcher)
+        self._rw.finished.connect(self._on_tray_restored)
+        self._rw.start()
+
+    def _on_tray_restored(self, ok, msg):
+        if ok:
+            self.config.setdefault("target", {})["enabled"] = False
+            save_config(self.config)
+            self._log("[托盘] 已恢复原始 API")
+            self.tray.showMessage("已恢复", "已恢复原始 API", QSystemTrayIcon.MessageIcon.Information, 2000)
+        else:
+            self._log(f"[托盘] 恢复失败: {msg}")
+            self.tray.showMessage("恢复失败", msg, QSystemTrayIcon.MessageIcon.Warning, 3000)
+        self._refresh()
+        self._load_config()
+
+    def closeEvent(self, event):
+        """关闭窗口时最小化到托盘而不是退出"""
+        event.ignore()
+        self.hide()
+        self.tray.showMessage(
+            "MiniMax Code API 代理",
+            "已最小化到系统托盘，右键图标可切换 API 或退出",
+            QSystemTrayIcon.MessageIcon.Information,
+            2000,
+        )
 
     def _refresh_log_list(self):
         """刷新日期下拉列表"""
