@@ -139,8 +139,8 @@ class MainWindow(FluentWindow):
         self.patcher = DaemonPatcher(Path(install_dir) / daemon_js)
 
         self.setWindowTitle("MiniMax Code API 代理")
-        self.resize(620, 560)
-        self.setMinimumSize(500, 460)
+        self.resize(620, 480)
+        self.setMinimumSize(500, 400)
 
         # Tab 1: Dashboard
         self.page_dash = QWidget()
@@ -489,8 +489,8 @@ class MainWindow(FluentWindow):
 
     def _build_help(self):
         root = QVBoxLayout(self.page_help)
-        root.setContentsMargins(24, 20, 24, 20)
-        root.setSpacing(18)
+        root.setContentsMargins(24, 16, 24, 16)
+        root.setSpacing(10)
 
         # ── 简介 ──
         intro_card = HeaderCardWidget(self)
