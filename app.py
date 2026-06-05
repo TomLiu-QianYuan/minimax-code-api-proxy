@@ -45,17 +45,19 @@ API_PRESETS = {
     "Mimo (SGP)": {
         "url": "https://token-plan-sgp.xiaomimimo.com/anthropic",
         "key": "tp-sdixcpi5ch8y24o5u0fdmd1f17euypf2o6bcgxajoz32vhwf",
+        "type": "anthropic",
     },
     "Mimo (CN)": {
         "url": "https://token-plan-cn.xiaomimimo.com/anthropic",
         "key": "tp-civ3ul3w09m1divicib5gsirnkkyf0dxhme7s2ybqih4y6fm",
+        "type": "anthropic",
     },
-    "DeepSeek":  {"url": "https://api.deepseek.com/v1"},
-    "OpenAI":    {"url": "https://api.openai.com/v1"},
-    "SiliconFlow": {"url": "https://api.siliconflow.cn/v1"},
-    "One API":   {"url": "http://localhost:3000/v1"},
-    "Groq":      {"url": "https://api.groq.com/openai/v1"},
-    "自定义":    {"url": ""},
+    "DeepSeek":    {"url": "https://api.deepseek.com/v1",      "type": "openai"},
+    "OpenAI":      {"url": "https://api.openai.com/v1",         "type": "openai"},
+    "SiliconFlow": {"url": "https://api.siliconflow.cn/v1",     "type": "openai"},
+    "One API":     {"url": "http://localhost:3000/v1",           "type": "openai"},
+    "Groq":        {"url": "https://api.groq.com/openai/v1",    "type": "openai"},
+    "自定义":      {"url": "",                                    "type": "openai"},
 }
 
 
@@ -65,15 +67,16 @@ API_PRESETS = {
 class PatchWorker(QThread):
     finished = pyqtSignal(bool, str, list)
 
-    def __init__(self, patcher, url, key):
+    def __init__(self, patcher, url, key, api_type="anthropic"):
         super().__init__()
         self.patcher = patcher
         self.url = url
         self.key = key
+        self.api_type = api_type
 
     def run(self):
         try:
-            result = self.patcher.patch(self.url, self.key)
+            result = self.patcher.patch(self.url, self.key, self.api_type)
             if result["patched"]:
                 self.finished.emit(True, "补丁已应用", result["changes"])
             else:
@@ -186,16 +189,19 @@ class MainWindow(FluentWindow):
         self.dash_backup = QLabel()
         self.dash_preset = QLabel()
         self.dash_url = QLabel()
+        self.dash_format = QLabel()
 
         self._dash_cell(g, 0, 0, "补丁状态", self.dash_patch)
         self._dash_cell(g, 0, 1, "备份状态", self.dash_backup)
         self._dash_cell(g, 1, 0, "当前预设", self.dash_preset)
-        self._dash_cell(g, 1, 1, "目标 URL", self.dash_url)
+        self._dash_cell(g, 1, 1, "API 格式", self.dash_format)
+        self._dash_cell(g, 2, 0, "目标 URL", self.dash_url)
 
         g.setColumnStretch(0, 1)
         g.setColumnStretch(1, 1)
         g.setRowMinimumHeight(0, 56)
         g.setRowMinimumHeight(1, 56)
+        g.setRowMinimumHeight(2, 56)
 
         overview.viewLayout.addLayout(g)
         root.addWidget(overview)
@@ -269,6 +275,11 @@ class MainWindow(FluentWindow):
         preset = self.combo.currentData() or "未选择"
         self.dash_preset.setText(preset)
         self.dash_preset.setStyleSheet("font-size:14px;font-weight:600;color:#a5b4fc;")
+
+        # API 格式
+        fmt = self.combo_format.currentData() or "anthropic"
+        self.dash_format.setText("Anthropic" if fmt == "anthropic" else "OpenAI")
+        self.dash_format.setStyleSheet("font-size:14px;font-weight:600;color:#a5b4fc;")
 
         # URL
         url = self.input_url.text().strip()
@@ -344,6 +355,15 @@ class MainWindow(FluentWindow):
         self.btn_eye.setFixedSize(38, 38)
         self.btn_eye.clicked.connect(self._toggle_vis)
         g.addWidget(self.btn_eye, L, 3)
+        L += 1
+
+        # API 格式
+        g.addWidget(self._label("格式"), L, 0)
+        self.combo_format = ComboBox()
+        self.combo_format.setMinimumHeight(38)
+        self.combo_format.addItem("Anthropic (/messages)", userData="anthropic")
+        self.combo_format.addItem("OpenAI (/chat/completions)", userData="openai")
+        g.addWidget(self.combo_format, L, 1, 1, 3)
 
         # 列比例：标签固定，输入拉伸
         g.setColumnMinimumWidth(0, 36)
@@ -539,6 +559,7 @@ class MainWindow(FluentWindow):
         t = self.config.get("target", {})
         url = t.get("base_url", "")
         key = t.get("api_key", "")
+        api_type = t.get("api_type", "")
         enabled = t.get("enabled", False)
 
         if url:
@@ -552,6 +573,11 @@ class MainWindow(FluentWindow):
 
         if key:
             self.input_key.setText(key)
+
+        # 恢复 API 格式
+        if api_type:
+            fmt_idx = 0 if api_type == "anthropic" else 1
+            self.combo_format.setCurrentIndex(fmt_idx)
 
         self.switch_btn.blockSignals(True)
         self.switch_btn.setChecked(enabled)
@@ -567,6 +593,12 @@ class MainWindow(FluentWindow):
             if p.get("key"):
                 self.input_key.setText(p["key"])
             self.input_url.setReadOnly(name != "自定义")
+            # 设置 API 格式
+            api_type = p.get("type", "openai")
+            fmt_idx = 0 if api_type == "anthropic" else 1
+            self.combo_format.setCurrentIndex(fmt_idx)
+            # 自定义允许切换格式，预设锁定
+            self.combo_format.setEnabled(name == "自定义")
 
     def _update_label(self, on):
         if on:
@@ -611,6 +643,7 @@ class MainWindow(FluentWindow):
             "base_url": url,
             "api_key": key,
             "name": self.combo.currentData() or "custom",
+            "api_type": self.combo_format.currentData() or "anthropic",
             "enabled": True,
         }
         save_config(self.config)
@@ -621,8 +654,9 @@ class MainWindow(FluentWindow):
 
         self.btn_apply.setEnabled(False)
         self.btn_apply.setText("应用中...")
-        self._log(f"[补丁] {url}")
-        self._pw = PatchWorker(self.patcher, url, key)
+        api_type = self.combo_format.currentData() or "anthropic"
+        self._log(f"[补丁] {url}  格式={api_type}")
+        self._pw = PatchWorker(self.patcher, url, key, api_type)
         self._pw.finished.connect(self._on_applied)
         self._pw.start()
 
@@ -634,6 +668,7 @@ class MainWindow(FluentWindow):
                 "base_url": self.input_url.text().strip(),
                 "api_key": self.input_key.text().strip(),
                 "name": self.combo.currentData() or "custom",
+                "api_type": self.combo_format.currentData() or "anthropic",
                 "enabled": True,
             }
             save_config(self.config)
