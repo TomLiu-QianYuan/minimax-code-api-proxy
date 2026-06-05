@@ -381,6 +381,27 @@ class MainWindow(FluentWindow):
         card2.viewLayout.addLayout(g)
         root.addWidget(card2)
 
+        # ── 设置卡片 ──
+        card3 = HeaderCardWidget(self)
+        card3.setTitle("设置")
+        srow = QHBoxLayout()
+        srow.setContentsMargins(16, 10, 16, 10)
+
+        slabel = QVBoxLayout()
+        self.lbl_tray = StrongBodyLabel("关闭时最小化到托盘")
+        self.lbl_tray.setStyleSheet("color:#ccc;")
+        slabel.addWidget(self.lbl_tray)
+        sdesc = CaptionLabel("关闭窗口后程序继续运行，可通过托盘图标操作")
+        sdesc.setStyleSheet("color:#555;")
+        slabel.addWidget(sdesc)
+        srow.addLayout(slabel, 1)
+
+        self.switch_tray = SwitchButton()
+        self.switch_tray.checkedChanged.connect(self._on_tray_setting)
+        srow.addWidget(self.switch_tray)
+        card3.viewLayout.addLayout(srow)
+        root.addWidget(card3)
+
         # ── 按钮 ──
         brow = QHBoxLayout()
         brow.setSpacing(10)
@@ -494,7 +515,11 @@ class MainWindow(FluentWindow):
         root.addWidget(scroll)
 
         container = QWidget()
-        container.setStyleSheet("background:#1e1e1e;")
+        container.setStyleSheet("""
+            QWidget { background:#1e1e1e; }
+            HeaderCardWidget { background:#252525; border:1px solid #333; border-radius:8px; }
+            HeaderCardWidget QLabel { color:#aaa; }
+        """)
         scroll.setWidget(container)
         cl = QVBoxLayout(container)
         cl.setContentsMargins(24, 16, 24, 16)
@@ -503,66 +528,111 @@ class MainWindow(FluentWindow):
         # ── 简介 ──
         intro_card = HeaderCardWidget(self)
         intro_card.setTitle("简介")
-        intro_lbl = BodyLabel(
-            "MiniMax Code API 代理 是一个桌面工具，用于将 MiniMax Code 内置的 API "
-            "替换为任意外部 API（DeepSeek、Mimo、OpenAI、SiliconFlow 等）。\n\n"
-            "通过修改 daemon.js 中的预设地址和 npm 包引用，让 MiniMax Code "
-            "的请求发送到你指定的 API 端点，同时自动备份原始文件，随时可还原。"
-        )
-        intro_lbl.setWordWrap(True)
-        intro_lbl.setStyleSheet("color:#999;line-height:1.6;")
-        intro_card.viewLayout.addWidget(intro_lbl)
+        intro_inner = QVBoxLayout()
+        intro_inner.setSpacing(8)
+
+        lines = [
+            ("功能", "将 MiniMax Code 内置 API 替换为任意外部 API"),
+            ("支持", "DeepSeek / Mimo / OpenAI / SiliconFlow / Groq 等"),
+            ("原理", "修改 daemon.js 中的预设地址和 npm 包引用"),
+            ("安全", "自动备份原始文件，一键还原，不留痕迹"),
+        ]
+        for label, desc in lines:
+            row = QHBoxLayout()
+            tag = CaptionLabel(label)
+            tag.setFixedWidth(40)
+            tag.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            tag.setStyleSheet("color:#60a5fa;font-weight:600;")
+            row.addWidget(tag)
+            txt = BodyLabel(desc)
+            txt.setStyleSheet("color:#aaa;")
+            txt.setWordWrap(True)
+            row.addWidget(txt, 1)
+            intro_inner.addLayout(row)
+
+        intro_card.viewLayout.addLayout(intro_inner)
         cl.addWidget(intro_card)
 
         # ── 使用步骤 ──
         steps_card = HeaderCardWidget(self)
         steps_card.setTitle("使用步骤")
-        steps_lbl = BodyLabel(
-            "1.  关闭 MiniMax Code\n"
-            "2.  打开本工具，进入「控制台」\n"
-            "3.  选择预设（Mimo / DeepSeek / OpenAI...）或选「自定义」填写自己的 URL\n"
-            "4.  填入 API Key（Mimo 预设已自动填入）\n"
-            "5.  确认 API 格式（Anthropic / OpenAI，预设会自动匹配）\n"
-            "6.  点击「应用补丁」或拨开开关\n"
-            "7.  重新打开 MiniMax Code，即可使用新 API"
-        )
-        steps_lbl.setWordWrap(True)
-        steps_lbl.setStyleSheet("color:#999;line-height:1.8;")
-        steps_card.viewLayout.addWidget(steps_lbl)
+        steps_inner = QVBoxLayout()
+        steps_inner.setSpacing(6)
+
+        steps = [
+            "关闭 MiniMax Code",
+            "打开本工具，进入「控制台」",
+            "选择预设（Mimo / DeepSeek / OpenAI...）",
+            "填入 API Key（Mimo 预设已自动填入）",
+            "确认 API 格式（预设会自动匹配）",
+            "点击「应用补丁」或拨开开关",
+            "重新打开 MiniMax Code，即可使用新 API",
+        ]
+        for i, step in enumerate(steps, 1):
+            row = QHBoxLayout()
+            num = CaptionLabel(str(i))
+            num.setFixedSize(22, 22)
+            num.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            num.setStyleSheet("background:#2563eb;color:white;border-radius:11px;font-weight:600;font-size:11px;")
+            row.addWidget(num)
+            txt = BodyLabel(step)
+            txt.setStyleSheet("color:#aaa;")
+            txt.setWordWrap(True)
+            row.addWidget(txt, 1)
+            steps_inner.addLayout(row)
+
+        steps_card.viewLayout.addLayout(steps_inner)
         cl.addWidget(steps_card)
 
         # ── API 格式说明 ──
         fmt_card = HeaderCardWidget(self)
         fmt_card.setTitle("API 格式说明")
-        fmt_lbl = BodyLabel(
-            "Anthropic 格式（/messages）\n"
-            "  适用于 Mimo、Claude 等兼容 Anthropic 协议的 API。\n"
-            "  补丁会将 daemon.js 中的 @ai-sdk/openai 替换为 @ai-sdk/anthropic。\n\n"
-            "OpenAI 格式（/chat/completions）\n"
-            "  适用于 DeepSeek、OpenAI、SiliconFlow、Groq、One API 等。\n"
-            "  补丁会将 daemon.js 中的 @ai-sdk/anthropic 替换为 @ai-sdk/openai。"
-        )
-        fmt_lbl.setWordWrap(True)
-        fmt_lbl.setStyleSheet("color:#999;line-height:1.8;")
-        fmt_card.viewLayout.addWidget(fmt_lbl)
+        fmt_inner = QVBoxLayout()
+        fmt_inner.setSpacing(8)
+
+        fmts = [
+            ("Anthropic", "/messages", "Mimo、Claude 等", "@ai-sdk/anthropic"),
+            ("OpenAI", "/chat/completions", "DeepSeek、OpenAI、SiliconFlow 等", "@ai-sdk/openai"),
+        ]
+        for name, endpoint, providers, pkg in fmts:
+            row = QHBoxLayout()
+            tag = CaptionLabel(name)
+            tag.setFixedWidth(70)
+            tag.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            tag.setStyleSheet("color:#60a5fa;font-weight:600;")
+            row.addWidget(tag)
+            desc = BodyLabel(f"{endpoint}  ·  {providers}")
+            desc.setStyleSheet("color:#aaa;")
+            desc.setWordWrap(True)
+            row.addWidget(desc, 1)
+            fmt_inner.addLayout(row)
+
+        fmt_card.viewLayout.addLayout(fmt_inner)
         cl.addWidget(fmt_card)
 
         # ── 常见问题 ──
         faq_card = HeaderCardWidget(self)
         faq_card.setTitle("常见问题")
-        faq_lbl = BodyLabel(
-            "Q: 打补丁后 MiniMax Code 报错？\n"
-            "A: 确认 URL 和 Key 正确，且 API 支持对应格式（Anthropic / OpenAI）。\n\n"
-            "Q: MiniMax Code 更新后补丁失效？\n"
-            "A: 更新会覆盖 daemon.js，重新打一次补丁即可。\n\n"
-            "Q: 怎么完全恢复？\n"
-            "A: 拨回 OFF 或点「恢复原始」，自动还原 daemon.js。\n\n"
-            "Q: 配置文件搞乱了？\n"
-            "A: 日志页 → 配置备份 → 选择之前的备份 → 还原。"
-        )
-        faq_lbl.setWordWrap(True)
-        faq_lbl.setStyleSheet("color:#999;line-height:1.8;")
-        faq_card.viewLayout.addWidget(faq_lbl)
+        faq_inner = QVBoxLayout()
+        faq_inner.setSpacing(10)
+
+        faqs = [
+            ("打补丁后 MiniMax Code 报错？", "确认 URL 和 Key 正确，且 API 支持对应格式"),
+            ("MiniMax Code 更新后补丁失效？", "更新会覆盖 daemon.js，重新打一次补丁即可"),
+            ("怎么完全恢复？", "拨回 OFF 或点「恢复原始」，自动还原 daemon.js"),
+            ("配置文件搞乱了？", "日志页 → 配置备份 → 选择之前的备份 → 还原"),
+        ]
+        for q, a in faqs:
+            q_lbl = BodyLabel(f"Q: {q}")
+            q_lbl.setStyleSheet("color:#60a5fa;font-weight:600;")
+            q_lbl.setWordWrap(True)
+            faq_inner.addWidget(q_lbl)
+            a_lbl = BodyLabel(f"A: {a}")
+            a_lbl.setStyleSheet("color:#999;")
+            a_lbl.setWordWrap(True)
+            faq_inner.addWidget(a_lbl)
+
+        faq_card.viewLayout.addLayout(faq_inner)
         cl.addWidget(faq_card)
 
         # ── 项目信息 ──
@@ -696,15 +766,20 @@ class MainWindow(FluentWindow):
         self._load_config()
 
     def closeEvent(self, event):
-        """关闭窗口时最小化到托盘而不是退出"""
-        event.ignore()
-        self.hide()
-        self.tray.showMessage(
-            "MiniMax Code API 代理",
-            "已最小化到系统托盘，右键图标可切换 API 或退出",
-            QSystemTrayIcon.MessageIcon.Information,
-            2000,
-        )
+        """关闭窗口时根据设置决定最小化到托盘或直接退出"""
+        if self.config.get("minimize_to_tray", False):
+            event.ignore()
+            self.hide()
+            self.tray.showMessage(
+                "MiniMax Code API 代理",
+                "已最小化到系统托盘，右键图标可切换 API 或退出",
+                QSystemTrayIcon.MessageIcon.Information,
+                2000,
+            )
+        else:
+            # 直接退出
+            self.tray.hide()
+            event.accept()
 
     def _refresh_log_list(self):
         """刷新日期下拉列表"""
@@ -814,6 +889,12 @@ class MainWindow(FluentWindow):
         self.switch_btn.blockSignals(False)
         self._update_label(enabled)
 
+        # 恢复托盘设置
+        minimize_to_tray = self.config.get("minimize_to_tray", False)
+        self.switch_tray.blockSignals(True)
+        self.switch_tray.setChecked(minimize_to_tray)
+        self.switch_tray.blockSignals(False)
+
     def _on_preset(self, idx):
         name = self.combo.currentData()
         if name in API_PRESETS:
@@ -847,6 +928,11 @@ class MainWindow(FluentWindow):
         self._update_label(on)
         self.config.setdefault("target", {})["enabled"] = on
         save_config(self.config)
+
+    def _on_tray_setting(self, on):
+        self.config["minimize_to_tray"] = on
+        save_config(self.config)
+        self._log(f"[设置] 关闭时最小化到托盘 = {'开' if on else '关'}")
 
     def _toggle_vis(self):
         if self.input_key.echoMode() == QLineEdit.EchoMode.Password:
