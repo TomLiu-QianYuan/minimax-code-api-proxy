@@ -101,14 +101,38 @@ class RestoreWorker(QThread):
 # ── 主窗口 ────────────────────────────────────────────────────────────
 
 
+def detect_minimax_dir() -> Path | None:
+    """自动检测 MiniMax Code 安装目录"""
+    candidates = [
+        Path.home() / "AppData/Local/Programs/MiniMax Code",
+        Path.home() / "AppData/Local/Programs/minimax-code",
+        Path(r"C:\Program Files\MiniMax Code"),
+        Path(r"C:\Program Files (x86)\MiniMax Code"),
+    ]
+    for p in candidates:
+        if p.exists():
+            return p
+    return None
+
+
 class MainWindow(FluentWindow):
     def __init__(self):
         super().__init__()
         self.config = load_config()
-        self.patcher = DaemonPatcher(
-            Path(self.config["minimax"]["install_dir"])
-            / self.config["minimax"]["daemon_js"]
+
+        # 自动检测安装目录
+        install_dir = self.config.get("minimax", {}).get("install_dir", "")
+        if not install_dir:
+            detected = detect_minimax_dir()
+            if detected:
+                install_dir = str(detected)
+                self.config.setdefault("minimax", {})["install_dir"] = install_dir
+                save_config(self.config)
+
+        daemon_js = self.config.get("minimax", {}).get(
+            "daemon_js", "resources/resources/daemon/daemon.js"
         )
+        self.patcher = DaemonPatcher(Path(install_dir) / daemon_js)
 
         self.setWindowTitle("MiniMax Code API 代理")
         self.resize(620, 560)

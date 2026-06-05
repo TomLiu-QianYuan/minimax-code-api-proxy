@@ -8,5 +8,6 @@ target:
   enabled: false  # 默认关闭（使用原版 MiniMax API）
 
 minimax:
-  install_dir: "C:/Users/33105/AppData/Local/Programs/MiniMax Code"
+  # 安装目录会自动检测，如果检测失败可手动填写
+  install_dir: ""
   daemon_js: "resources/resources/daemon/daemon.js"
