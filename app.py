@@ -117,7 +117,7 @@ class MainWindow(FluentWindow):
         self.page_dash = QWidget()
         self.page_dash.setObjectName("dash")
         self._build_dashboard()
-        self.addSubInterface(self.page_dash, FIF.DASHBOARD, "Dashboard")
+        self.addSubInterface(self.page_dash, FIF.HOME, "Dashboard")
 
         # Tab 2: 控制台
         self.page_control = QWidget()
