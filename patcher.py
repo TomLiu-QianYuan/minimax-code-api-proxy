@@ -134,6 +134,12 @@ class DaemonPatcher:
             content = "/* PATCHED BY MODEL-PROXY */\n" + content
 
         if content == original:
+            # 已经是目标状态，检查是否已打补丁
+            if self.is_patched():
+                # 检查 URL 是否已匹配
+                current_urls = self.get_current_urls()
+                if current_urls.get("cn-prod") == target_url or current_urls.get("en-prod") == target_url:
+                    return {"patched": True, "changes": ["已打补丁（无需修改）"]}
             return {"patched": False, "changes": []}
 
         self.daemon_js.write_text(content, encoding="utf-8")
